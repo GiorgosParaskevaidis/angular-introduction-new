@@ -20,9 +20,9 @@ import { EPerson } from 'src/app/shared/interfaces/person';
   styleUrl: './eperson-template-driven-form.component.css',
 })
 export class EpersonTemplateDrivenFormComponent {
-  @Output() eperson = new EventEmitter<EPerson>();
+  @Output() person = new EventEmitter<EPerson>();
   onSubmit(value: any) {
     console.log(value as EPerson);
-    this.eperson.emit(value as EPerson);
+    this.person.emit(value as EPerson);
   }
 }
