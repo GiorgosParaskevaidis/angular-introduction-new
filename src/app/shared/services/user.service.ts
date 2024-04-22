@@ -1,7 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { environment } from 'src/environments/environment';
-import { User } from '../interfaces/user';
+import { Credentials, LoggedinUser, User } from '../interfaces/user';
+import { Router } from '@angular/router';
+import { jwtDecode } from 'jwt-decode';
 
 const API_URL = `${environment.apiURL}/user`;
 
@@ -11,6 +13,30 @@ const API_URL = `${environment.apiURL}/user`;
 export class UserService {
   http: HttpClient = inject(HttpClient);
 
+  router: Router = inject(Router);
+
+  user = signal<LoggedinUser | null>(null);
+
+  constructor() {
+    const access_token = localStorage.getItem('access_token');
+    if (access_token) {
+      const decodedTokenSubject = jwtDecode(access_token)
+        .sub as unknown as LoggedinUser;
+      this.user.set({
+        fullname: decodedTokenSubject.fullname,
+        email: decodedTokenSubject.email,
+      });
+    }
+
+    effect(() => {
+      if (this.user()) {
+        console.log('User loggedin', this.user().fullname);
+      } else {
+        console.log('User not loggedin');
+      }
+    });
+  }
+
   registerUser(user: User) {
     return this.http.post<{ msg: string }>(`${API_URL}/register`, user);
   }
@@ -19,5 +45,18 @@ export class UserService {
     return this.http.get<{ msg: string }>(
       `${API_URL}/check_duplicate_email/${email}`,
     );
+  }
+
+  loginUser(credentials: Credentials) {
+    return this.http.post<{ access_token: string }>(
+      `${API_URL}/login`,
+      credentials,
+    );
+  }
+
+  logoutUser() {
+    localStorage.removeItem('access_token');
+    this.user.set(null);
+    this.router.navigate(['login']);
   }
 }
